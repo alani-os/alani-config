@@ -12,12 +12,15 @@ Typed configuration schema skeleton for the Alani MVK. This crate owns configura
 
 The Cargo manifest intentionally keeps sibling crates out of `[dependencies]`. `alani-protocol` remains recorded as package metadata until its schema contracts are stable enough to consume directly.
 
+The public schema version is `alani.config.v1`. Checked examples live under `examples/`, and machine-readable field metadata lives under `schemas/`.
+
 ## Quick Start
 
 ```bash
 cargo fmt -- --check
 cargo test --all-features
 cargo test --no-default-features
+python3 tools/validate_config_examples.py
 cargo clippy --all-features -- -D warnings
 ```
 
@@ -33,6 +36,12 @@ src/
   lib.rs         ConfigManager facade and public re-exports
 tests/
   smoke.rs       Host-mode coverage for public config contracts
+examples/
+  host.toml      Valid host-mode profile fixture
+schemas/
+  config-profile.schema.json
+tools/
+  validate_config_examples.py
 ```
 
 ## Profile Format

@@ -1,7 +1,8 @@
 use alani_config::{
-    parse_config_profile, BuiltinSchema, ComponentStatus, ConfigDomain, ConfigError, ConfigLoader,
-    ConfigManager, ConfigProfile, ConfigRecord, ConfigValue, ConfigValueKind, DataClass,
-    LoaderConfig, LoaderMode, ProfileMode, ValidationCode, HOST_CONFIG,
+    config_catalog, parse_config_profile, BuiltinSchema, ComponentStatus, ConfigDomain,
+    ConfigError, ConfigLoader, ConfigManager, ConfigProfile, ConfigRecord, ConfigValue,
+    ConfigValueKind, DataClass, LoaderConfig, LoaderMode, ProfileMode, ValidationCode,
+    CONFIG_SCHEMA_VERSION, HOST_CONFIG,
 };
 
 const VALID_CONFIG: &str = r#"
@@ -64,6 +65,14 @@ fn repository_identity_is_stable() {
         alani_config::module_names(),
         &["error", "loader", "profiles", "schema", "validation"]
     );
+
+    let catalog = config_catalog();
+    assert_eq!(catalog.schema_version, CONFIG_SCHEMA_VERSION);
+    assert_eq!(
+        catalog.builtin_field_count,
+        alani_config::BUILTIN_FIELD_COUNT
+    );
+    assert_eq!(catalog.validate(), Ok(()));
 }
 
 #[test]
@@ -75,10 +84,12 @@ fn builtin_schema_declares_domains_types_and_redaction() {
 
     let policy_bundle = BuiltinSchema::field(ConfigDomain::Security, "policy_bundle").unwrap();
     assert_eq!(policy_bundle.data_class, DataClass::Sensitive);
-    assert!(policy_bundle.data_class.requires_redaction());
+    assert!(policy_bundle.requires_redaction());
 
     assert!(ConfigDomain::from_label("environment").is_some());
     assert_eq!(ConfigDomain::Release.label(), "release");
+    assert!(ConfigDomain::Security.is_audit_relevant());
+    assert!(!ConfigDomain::Environment.is_audit_relevant());
 }
 
 #[test]
@@ -107,6 +118,19 @@ fn loader_parses_toml_like_profile_and_typed_values() {
             .unwrap()
             .source_line,
         18
+    );
+
+    let runtime_keys: Vec<&str> = profile
+        .records_for_domain(ConfigDomain::Runtime)
+        .map(|record| record.key)
+        .collect();
+    assert!(runtime_keys.contains(&"max_processes"));
+    assert_eq!(
+        profile
+            .audit_relevant_records()
+            .filter(|record| record.domain == ConfigDomain::Security)
+            .count(),
+        5
     );
 }
 

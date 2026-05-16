@@ -1,0 +1,39 @@
+[profile]
+name = "mvk.host"
+version = "0.1.0"
+mode = "host"
+target = "x86_64-uefi"
+
+[environment]
+name = "host"
+mode = "host"
+target = "x86_64-uefi"
+log_level = "info"
+host_mocks = true
+
+[boot]
+kernel_path = "/boot/alani-kernel"
+init_profile = "mvk.host"
+memory_limit_bytes = 268435456
+require_measurements = false
+
+[runtime]
+max_processes = 64
+max_agents = 16
+default_priority = 128
+enable_mock_cognition = true
+supervision_tick_ms = 10
+
+[security]
+secure_boot = false
+audit_required = true
+policy_bundle = "/etc/alani/policy.mvk"
+allow_unsigned = true
+min_key_bits = 128
+
+[devices]
+console = "mock"
+storage = "memory"
+network = "disabled"
+cognition = "mock"
+max_device_buffers = 64

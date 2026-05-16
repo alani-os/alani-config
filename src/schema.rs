@@ -7,6 +7,9 @@
 
 use crate::error::{ConfigError, ConfigResult};
 
+/// Config schema version owned by this crate.
+pub const CONFIG_SCHEMA_VERSION: &str = "alani.config.v1";
+
 /// Number of built-in schema fields in the MVK skeleton.
 pub const BUILTIN_FIELD_COUNT: usize = 34;
 
@@ -58,6 +61,19 @@ impl ConfigDomain {
             Self::Release => "release",
             Self::Environment => "environment",
         }
+    }
+
+    /// Returns `true` when changing this domain should produce audit evidence.
+    pub const fn is_audit_relevant(self) -> bool {
+        matches!(
+            self,
+            Self::Boot
+                | Self::Devices
+                | Self::Runtime
+                | Self::Security
+                | Self::Corpus
+                | Self::Release
+        )
     }
 }
 
@@ -207,6 +223,11 @@ pub struct ConfigField {
 }
 
 impl ConfigField {
+    /// Returns `true` when values for this field should be redacted in diagnostics.
+    pub const fn requires_redaction(self) -> bool {
+        self.data_class.requires_redaction()
+    }
+
     /// Validates one record against this schema field.
     pub fn validate_value(&self, record: ConfigRecord<'_>) -> ConfigResult<()> {
         if record.domain != self.domain || record.key != self.key {

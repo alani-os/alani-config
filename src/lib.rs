@@ -23,7 +23,8 @@ pub use profiles::{
 };
 pub use schema::{
     BuiltinSchema, ConfigDomain, ConfigField, ConfigRecord, ConfigValue, ConfigValueKind,
-    DataClass, SchemaDescriptor, BUILTIN_FIELDS, BUILTIN_FIELD_COUNT, MAX_CONFIG_KEY_LEN,
+    DataClass, SchemaDescriptor, BUILTIN_FIELDS, BUILTIN_FIELD_COUNT, CONFIG_SCHEMA_VERSION,
+    MAX_CONFIG_KEY_LEN,
 };
 pub use validation::{
     ConfigValidator, ValidationCode, ValidationDescriptor, ValidationIssue, ValidationReport,
@@ -38,6 +39,62 @@ pub const VERSION: &str = "0.1.0";
 
 /// Public module names exposed by this skeleton.
 pub const MODULES: &[&str] = &["error", "loader", "profiles", "schema", "validation"];
+
+/// Compact root view of the config crate contract.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ConfigCatalog {
+    /// Repository name.
+    pub repository: &'static str,
+    /// Crate version.
+    pub version: &'static str,
+    /// Config document schema version.
+    pub schema_version: &'static str,
+    /// Built-in schema field count.
+    pub builtin_field_count: usize,
+    /// Maximum records accepted by one profile.
+    pub max_records: usize,
+    /// Default maximum configuration document length.
+    pub default_max_config_len: usize,
+}
+
+impl ConfigCatalog {
+    /// Current config catalog.
+    pub const CURRENT: Self = Self {
+        repository: REPOSITORY,
+        version: VERSION,
+        schema_version: CONFIG_SCHEMA_VERSION,
+        builtin_field_count: BUILTIN_FIELD_COUNT,
+        max_records: MAX_CONFIG_RECORDS,
+        default_max_config_len: DEFAULT_MAX_CONFIG_LEN,
+    };
+
+    /// Returns the current catalog.
+    pub const fn current() -> Self {
+        Self::CURRENT
+    }
+
+    /// Validates catalog metadata.
+    pub const fn validate(self) -> ConfigResult<()> {
+        if self.repository.is_empty() || self.version.is_empty() || self.schema_version.is_empty() {
+            return Err(ConfigError::MissingField);
+        }
+        if self.builtin_field_count == 0
+            || self.max_records == 0
+            || self.default_max_config_len == 0
+        {
+            return Err(ConfigError::InvalidArgument);
+        }
+        Ok(())
+    }
+}
+
+/// Current config catalog.
+pub const CONFIG_CATALOG: ConfigCatalog = ConfigCatalog::CURRENT;
+
+/// Returns the current config catalog.
+pub const fn config_catalog() -> ConfigCatalog {
+    ConfigCatalog::CURRENT
+}
 
 /// Implementation maturity marker for generated repository metadata.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

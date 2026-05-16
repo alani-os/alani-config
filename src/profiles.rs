@@ -109,6 +109,23 @@ impl<'a> ConfigProfile<'a> {
         &self.records[..self.record_count]
     }
 
+    /// Iterates over records in one configuration domain.
+    pub fn records_for_domain(
+        &self,
+        domain: ConfigDomain,
+    ) -> impl Iterator<Item = &ConfigRecord<'a>> {
+        self.records()
+            .iter()
+            .filter(move |record| record.domain == domain)
+    }
+
+    /// Iterates over records whose domains should produce audit evidence on change.
+    pub fn audit_relevant_records(&self) -> impl Iterator<Item = &ConfigRecord<'a>> {
+        self.records()
+            .iter()
+            .filter(|record| record.domain.is_audit_relevant())
+    }
+
     /// Adds a typed record, rejecting duplicate domain/key pairs.
     pub fn push_record(&mut self, record: ConfigRecord<'a>) -> ConfigResult<()> {
         if self.get(record.domain, record.key).is_some() {
